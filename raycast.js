@@ -49,7 +49,12 @@ class Map {
         const tileColor = this.grid[i][j] ? '#222' : '#fff'
         stroke('#222')
         fill(tileColor)
-        rect(tileX, tileY, TILE_SIZE, TILE_SIZE)
+        rect(
+          MINI_MAP_SCALE_FACTOR * tileX,
+          MINI_MAP_SCALE_FACTOR * tileY,
+          MINI_MAP_SCALE_FACTOR * TILE_SIZE,
+          MINI_MAP_SCALE_FACTOR * TILE_SIZE
+        )
       }
     }
   }
@@ -80,8 +85,11 @@ class Player {
 
   render() {
     noStroke()
-    fill('red')
-    circle(this.x, this.y, this.radius)
+    fill('blue')
+    circle(
+      MINI_MAP_SCALE_FACTOR * this.x,
+      MINI_MAP_SCALE_FACTOR * this.y,
+      MINI_MAP_SCALE_FACTOR * this.radius)
   }
 }
 
@@ -194,10 +202,10 @@ class Ray {
     // console.log({ wallStripHeight })
     stroke('rgba(255,0,0,0.3)')
     line(
-      player.x,
-      player.y,
-      this.wallHitX,
-      this.wallHitY
+      MINI_MAP_SCALE_FACTOR * player.x,
+      MINI_MAP_SCALE_FACTOR * player.y,
+      MINI_MAP_SCALE_FACTOR * this.wallHitX,
+      MINI_MAP_SCALE_FACTOR * this.wallHitY
     )
   }
 }
@@ -240,6 +248,10 @@ function keyReleased() {
   }
 }
 
+function render3DProjectedWalls() {
+  
+}
+
 function castAllRays() {
   let rayAngle = player.rotationAngle - (FOV_ANGLE / 2)
   for (let i = 0; i < NUM_OF_RAYS; i++) {
@@ -266,6 +278,7 @@ function update() {
 
 function draw() {
   update()
+  render3DProjectedWalls()
   grid.render()
   player.render()
   for (ray of rays) {
