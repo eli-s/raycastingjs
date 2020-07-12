@@ -8,14 +8,14 @@ const WINDOW_HEIGHT = MAP_NUM_ROWS * TILE_SIZE;
 
 const FOV_ANGLE = 60 * (Math.PI / 180)
 
-const WALL_STRIP_WIDTH = 1
+const WALL_STRIP_WIDTH = 2
 const NUM_OF_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH
 
 const PROJECTION_PLANE_RATIO = (WINDOW_WIDTH / 2) / Math.tan(FOV_ANGLE / 2)
 
 const FULL_CIRCLE = 2 * Math.PI
 
-const MINI_MAP_SCALE_FACTOR = 0.2
+const MINI_MAP_SCALE_FACTOR = 0.15
 
 class Map {
   constructor() {
@@ -68,8 +68,8 @@ class Player {
     this.turnDirection = 0
     this.walkDirection = 0
     this.rotationAngle = Math.PI / 2
-    this.moveSpeed = 2.0
-    this.rotationSpeed = 2 * (Math.PI / 180) 
+    this.moveSpeed = 4.0
+    this.rotationSpeed = 3 * (Math.PI / 180) 
   }
 
   update() {
@@ -106,7 +106,7 @@ class Ray {
     this.isRayFacingLeft = !this.isRayFacingRight
   }
 
-  cast(columnId) {
+  cast() {
     const horzHitPoint = this.findHorizontalGridIntersectionHit()
     const vertHitPoint = this.findVerticalGridIntersectionHit()
     const horzHitDistance = horzHitPoint.found ? calcPointsDistance(player, horzHitPoint) : Number.MAX_VALUE
@@ -138,12 +138,8 @@ class Ray {
     let nextTouchX = xIntercept
     let nextTouchY = yIntercept
 
-    if (this.isRayFacingUp) {
-      nextTouchY--
-    }
-
     while(nextTouchX >= 0 && nextTouchX <= WINDOW_WIDTH && nextTouchY >= 0 && nextTouchY <= WINDOW_HEIGHT) {
-      if(grid.checkCollision(nextTouchX, nextTouchY)) {
+      if(grid.checkCollision(nextTouchX, nextTouchY - this.isRayFacingUp)) {
         found = true
         wallHitX = nextTouchX
         wallHitY = nextTouchY
@@ -178,12 +174,8 @@ class Ray {
     let nextTouchX = xIntercept
     let nextTouchY = yIntercept
 
-    if (this.isRayFacingLeft) {
-      nextTouchX--
-    }
-
     while(nextTouchX >= 0 && nextTouchX <= WINDOW_WIDTH && nextTouchY >= 0 && nextTouchY <= WINDOW_HEIGHT) {
-      if(grid.checkCollision(nextTouchX, nextTouchY)) {
+      if(grid.checkCollision(nextTouchX - this.isRayFacingLeft, nextTouchY)) {
         found = true
         wallHitX = nextTouchX
         wallHitY = nextTouchY
@@ -198,8 +190,6 @@ class Ray {
   }
 
   render() {
-    // const wallStripHeight = (TILE_SIZE / this.distance) * PROJECTION_PLANE_RATIO
-    // console.log({ wallStripHeight })
     stroke('rgba(255,0,0,0.3)')
     line(
       MINI_MAP_SCALE_FACTOR * player.x,
@@ -215,7 +205,7 @@ const player = new Player()
 const rays = []
 
 function calcPointsDistance(p1, p2) {
-  return Math.abs(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2))
+  return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2))
 }
 
 function keyPressed() {
@@ -249,7 +239,25 @@ function keyReleased() {
 }
 
 function render3DProjectedWalls() {
-  
+
+  rays.forEach(({ distance, rayAngle, wasHitVertical }, idx) => {
+    const correntDistance = distance * Math.cos(rayAngle - player.rotationAngle)
+    const wallStripHeight = (TILE_SIZE / correntDistance) * PROJECTION_PLANE_RATIO
+
+    // const alpha = 170 / correntDistance
+
+    const alpha = 1.0
+    const color = wasHitVertical ? 255 : 180
+
+    fill(`rgba(${color}, ${color}, ${color}, ${alpha})`)
+    noStroke()
+    rect(
+      idx * WALL_STRIP_WIDTH,
+      (WINDOW_HEIGHT / 2) - (wallStripHeight / 2),
+      WALL_STRIP_WIDTH,
+      wallStripHeight
+    )
+  })
 }
 
 function castAllRays() {
@@ -277,11 +285,15 @@ function update() {
 }
 
 function draw() {
+  clear("#212121")
   update()
+
   render3DProjectedWalls()
   grid.render()
-  player.render()
+
+  
   for (ray of rays) {
     ray.render()
   }
+  player.render()
 }
